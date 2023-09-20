@@ -21,8 +21,8 @@ fn handle(mut stream: TcpStream, directory: String) {
     println!("Connection established!");
     let request_data = &mut [0; 1024];
     stream.read(request_data).unwrap();
-    let request_data = request_data.iter().map(|x| *x as char).collect_vec().join("").trim_end_matches(char::from(0)).to_string();
-    let request = HTTPRequest::from_string(String::from_utf8_lossy(request_data).to_string());
+    let request_data = String::from_utf8_lossy(request_data).trim_end_matches(char::from(0)).to_string();
+    let request = HTTPRequest::from_string(request_data);
     match request.method.as_str() {
         "GET" => {
             match request.path.as_str() {
