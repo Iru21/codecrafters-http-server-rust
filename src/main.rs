@@ -44,6 +44,7 @@ fn handle(mut stream: TcpStream, directory: String) {
 
                     match file {
                         Ok(data) => {
+                            println!("data: {}", data);
                             let length = data.len().to_string();
                             let headers = HashMap::from([
                                 ("Content-Type", "application/octet-stream"),
