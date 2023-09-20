@@ -33,13 +33,15 @@ fn handle(mut stream: TcpStream) {
             }
             _ if request.path.starts_with("/echo/") => {
                 let echo = request.path.replace("/echo/", "");
-                let res = format!("Content-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", echo.len(), echo);
-                let response = format!("HTTP/1.1 200 OK\r\n{}", res);
-                stream.write(response.as_bytes()).unwrap();
+                let length = echo.len().to_string();
+                let headers = HashMap::from([
+                    ("Content-Type", "text/plain"),
+                    ("Content-Length", length.as_str()),
+                ]);
+                send_response(stream, HTTPResponse::new(200, echo, headers));
             },
             _ => {
-                let response = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
-                stream.write(response.as_bytes()).unwrap();
+                send_response(stream, HTTPResponse::new(404, "".to_string(), HashMap::new()))
             }
         }
     }
@@ -52,7 +54,6 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(data) => {
-                // thread
                 thread::spawn(|| {
                     handle(data);
                 });
