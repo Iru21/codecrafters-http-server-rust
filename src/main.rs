@@ -80,7 +80,7 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(data) => {
-                let dir = args[2].clone();
+                let dir = args.get(2).unwrap_or(&String::from(".")).to_string();
 
                 thread::spawn(move || {
                     handle(data, dir);
