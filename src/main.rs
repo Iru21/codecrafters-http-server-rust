@@ -1,6 +1,47 @@
+mod request;
+
+use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use itertools::Itertools;
+use crate::request::{HTTPRequest, HTTPResponse};
+
+fn send_response(mut stream: TcpStream, response: HTTPResponse) {
+    let response_string = response.to_string();
+    stream.write(response_string.as_bytes()).unwrap();
+}
+
+fn handle(mut stream: TcpStream) {
+    println!("Connection established!");
+    let request_data = &mut [0; 512];
+    stream.read(request_data).unwrap();
+    let request = HTTPRequest::from_string(String::from_utf8_lossy(request_data).to_string());
+    if request.method == "GET" {
+        match request.path.as_str() {
+            "/" => {
+                send_response(stream, HTTPResponse::new(200, "Hello, world!".to_string(), HashMap::new()))
+            },
+            "/user-agent" => {
+                let user_agent = request.headers.iter().find(|x| x.starts_with("User-Agent:")).unwrap().split(": ").collect_vec()[1].to_string();
+                let headers = HashMap::from([
+                    ("Content-Type", "text/plain"),
+                    ("Content-Length", user_agent.len().to_string().as_str()),
+                ]);
+                send_response(stream, HTTPResponse::new(200, user_agent, headers.into()));
+            }
+            _ if request.path.starts_with("/echo/") => {
+                let echo = request.path.replace("/echo/", "");
+                let res = format!("Content-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", echo.len(), echo);
+                let response = format!("HTTP/1.1 200 OK\r\n{}", res);
+                stream.write(response.as_bytes()).unwrap();
+            },
+            _ => {
+                let response = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
+                stream.write(response.as_bytes()).unwrap();
+            }
+        }
+    }
+}
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
@@ -8,38 +49,7 @@ fn main() {
 
     for stream in listener.incoming() {
         match stream {
-            Ok(mut data) => {
-                println!("Connection established!");
-                let request = &mut [0; 512];
-                data.read(request).unwrap();
-                let text = String::from_utf8_lossy(request).to_string();
-                let lines = text.lines().collect_vec();
-                let start_line = lines[0].split_whitespace().collect_vec();
-                if start_line[0] == "GET" {
-                    match start_line[1] {
-                        "/" => {
-                            let response = "HTTP/1.1 200 OK\r\n\r\n";
-                            data.write(response.as_bytes()).unwrap();
-                        },
-                        "/user-agent" => {
-                            let headers = lines[1..].iter().map(|x| x.to_string()).collect_vec();
-                            let user_agent = headers.iter().find(|x| x.starts_with("User-Agent:")).unwrap().split(": ").collect_vec()[1].to_string();
-                            let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
-                            data.write(response.as_bytes()).unwrap();
-                        }
-                        _ if start_line[1].starts_with("/echo/") => {
-                            let echo = start_line[1].replace("/echo/", "");
-                            let res = format!("Content-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", echo.len(), echo);
-                            let response = format!("HTTP/1.1 200 OK\r\n{}", res);
-                            data.write(response.as_bytes()).unwrap();
-                        },
-                        _ => {
-                            let response = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
-                            data.write(response.as_bytes()).unwrap();
-                        }
-                    }
-                }
-            }
+            Ok(data) => handle(data),
             Err(e) => {
                 println!("error: {}", e);
             }
