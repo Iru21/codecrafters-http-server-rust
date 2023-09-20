@@ -48,7 +48,7 @@ fn handle(mut stream: TcpStream, directory: String) {
                             let length = data.len().to_string();
                             let headers = HashMap::from([
                                 ("Content-Type", "application/octet-stream"),
-                                // ("Content-Length", length.as_str()),
+                                ("Content-Length", length.as_str()),
                             ]);
                             send_response(stream, HTTPResponse::new(200, data, headers));
                         },
