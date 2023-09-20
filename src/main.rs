@@ -23,11 +23,12 @@ fn handle(mut stream: TcpStream) {
             },
             "/user-agent" => {
                 let user_agent = request.headers.iter().find(|x| x.starts_with("User-Agent:")).unwrap().split(": ").collect_vec()[1].to_string();
+                let length = user_agent.len().to_string();
                 let headers = HashMap::from([
                     ("Content-Type", "text/plain"),
-                    ("Content-Length", user_agent.len().to_string().as_str()),
+                    ("Content-Length", length.as_str()),
                 ]);
-                send_response(stream, HTTPResponse::new(200, user_agent, headers.into()));
+                send_response(stream, HTTPResponse::new(200, user_agent, headers));
             }
             _ if request.path.starts_with("/echo/") => {
                 let echo = request.path.replace("/echo/", "");

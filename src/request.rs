@@ -8,15 +8,18 @@ pub struct HTTPResponse {
 }
 
 impl HTTPResponse {
-    pub(crate) fn new(status_code: u32, body: String, headers: HashMap<String, String>) -> HTTPResponse {
+    pub fn new(status_code: u32, body: String, headers: HashMap<&str, &str>) -> HTTPResponse {
         HTTPResponse {
             status_code,
             body,
-            headers
+            headers: headers.
+                iter().
+                map(|(k, v)| (k.to_string(), v.to_string())).
+                collect(),
         }
     }
 
-    fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         let status = match self.status_code {
             200 => "OK",
             404 => "NOT FOUND",
