@@ -23,7 +23,7 @@ fn main() {
                         },
                         "/user-agent" => {
                             let headers = lines[1..].iter().map(|x| x.to_string()).collect_vec();
-                            let user_agent = headers.iter().find(|x| x.starts_with("User-Agent:")).unwrap();
+                            let user_agent = headers.iter().find(|x| x.starts_with("User-Agent:")).unwrap().split(": ").collect_vec()[1].to_string();
                             let response = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
                             data.write(response.as_bytes()).unwrap();
                         }
