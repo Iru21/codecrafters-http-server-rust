@@ -3,7 +3,7 @@ mod request;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::thread;
+use std::{env, thread};
 use itertools::Itertools;
 use crate::request::{HTTPRequest, HTTPResponse};
 
@@ -12,7 +12,12 @@ fn send_response(mut stream: TcpStream, response: HTTPResponse) {
     stream.write(response_string.as_bytes()).unwrap();
 }
 
-fn handle(mut stream: TcpStream) {
+fn send_404(stream: TcpStream) {
+    let response = HTTPResponse::new(404, "".to_string(), HashMap::new());
+    send_response(stream, response);
+}
+
+fn handle(mut stream: TcpStream, directory: String) {
     println!("Connection established!");
     let request_data = &mut [0; 512];
     stream.read(request_data).unwrap();
@@ -30,7 +35,26 @@ fn handle(mut stream: TcpStream) {
                     ("Content-Length", length.as_str()),
                 ]);
                 send_response(stream, HTTPResponse::new(200, user_agent, headers));
-            }
+            },
+            _ if request.path.starts_with("/files/") => {
+                let filename = request.path.replace("/files/", "");
+                let path = format!("{}/{}", directory, filename);
+                let file = std::fs::read_to_string(path);
+
+                match file {
+                    Ok(data) => {
+                        let length = data.len().to_string();
+                        let headers = HashMap::from([
+                            ("Content-Type", "application/octet-stream"),
+                            ("Content-Length", length.as_str()),
+                        ]);
+                        send_response(stream, HTTPResponse::new(200, data, headers));
+                    },
+                    Err(_) => {
+                        send_404(stream);
+                    }
+                }
+            },
             _ if request.path.starts_with("/echo/") => {
                 let echo = request.path.replace("/echo/", "");
                 let length = echo.len().to_string();
@@ -41,13 +65,15 @@ fn handle(mut stream: TcpStream) {
                 send_response(stream, HTTPResponse::new(200, echo, headers));
             },
             _ => {
-                send_response(stream, HTTPResponse::new(404, "".to_string(), HashMap::new()))
+                send_404(stream);
             }
         }
     }
 }
 
 fn main() {
+    let args = env::args().collect_vec();
+
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
     println!("Server listening on port 4221");
 
@@ -55,7 +81,7 @@ fn main() {
         match stream {
             Ok(data) => {
                 thread::spawn(|| {
-                    handle(data);
+                    handle(data, args[2].clone());
                 });
             },
             Err(e) => {
