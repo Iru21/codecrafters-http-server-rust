@@ -34,6 +34,7 @@ pub struct HTTPRequest {
     pub method: String,
     pub path: String,
     pub headers: Vec<String>,
+    pub body: String,
 }
 
 impl HTTPRequest {
@@ -42,11 +43,25 @@ impl HTTPRequest {
         let start_line = lines[0].split_whitespace().collect_vec();
         let method = start_line[0].to_string();
         let path = start_line[1].to_string();
-        let headers = lines[1..].iter().map(|x| x.to_string()).collect_vec();
+        // headers and body
+        let mut headers = Vec::new();
+        let mut body = String::new();
+        let mut i = 1;
+        while i < lines.len() {
+            if lines[i].len() == 0 {
+                break;
+            }
+            headers.push(lines[i].to_string());
+            i += 1;
+        }
+        if i < lines.len() {
+            body = lines[i..].join("\n");
+        }
         HTTPRequest {
             method,
             path,
             headers,
+            body
         }
     }
 }
