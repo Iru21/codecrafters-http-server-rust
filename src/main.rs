@@ -80,8 +80,10 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(data) => {
-                thread::spawn(|| {
-                    handle(data, args[2].clone());
+                let dir = args[2].clone();
+
+                thread::spawn(move || {
+                    handle(data, dir);
                 });
             },
             Err(e) => {
