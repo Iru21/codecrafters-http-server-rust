@@ -19,7 +19,7 @@ fn send_404(stream: TcpStream) {
 
 fn handle(mut stream: TcpStream, directory: String) {
     println!("Connection established!");
-    let request_data = &mut [0; 512];
+    let request_data = &mut [0; 1024];
     stream.read(request_data).unwrap();
     let request = HTTPRequest::from_string(String::from_utf8_lossy(request_data).to_string());
     match request.method.as_str() {
