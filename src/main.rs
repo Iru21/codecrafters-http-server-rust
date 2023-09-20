@@ -3,6 +3,7 @@ mod request;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::thread;
 use itertools::Itertools;
 use crate::request::{HTTPRequest, HTTPResponse};
 
@@ -50,7 +51,12 @@ fn main() {
 
     for stream in listener.incoming() {
         match stream {
-            Ok(data) => handle(data),
+            Ok(data) => {
+                // thread
+                thread::spawn(|| {
+                    handle(data);
+                });
+            },
             Err(e) => {
                 println!("error: {}", e);
             }
