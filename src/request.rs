@@ -43,19 +43,19 @@ impl HTTPRequest {
         let start_line = lines[0].split_whitespace().collect_vec();
         let method = start_line[0].to_string();
         let path = start_line[1].to_string();
-        // headers and body
         let mut headers = Vec::new();
         let mut body = String::new();
-        let mut i = 1;
-        while i < lines.len() {
-            if lines[i].len() == 0 {
-                break;
+        let mut is_body = false;
+        for line in lines[1..].iter() {
+            if line == &"" {
+                is_body = true;
+                continue;
             }
-            headers.push(lines[i].to_string());
-            i += 1;
-        }
-        if i < lines.len() {
-            body = lines[i..].join("\n");
+            if is_body {
+                body.push_str(line);
+                continue;
+            }
+            headers.push(line.to_string());
         }
         HTTPRequest {
             method,
