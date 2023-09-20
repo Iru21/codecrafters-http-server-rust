@@ -20,7 +20,13 @@ fn main() {
                         "/" => {
                             let response = "HTTP/1.1 200 OK\r\n\r\n";
                             data.write(response.as_bytes()).unwrap();
-                        }
+                        },
+                        _ if start_line[1].starts_with("/echo/") => {
+                            let echo = start_line[1].replace("/echo/", "");
+                            let res = format!("Content-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", echo.len(), echo);
+                            let response = format!("HTTP/1.1 200 OK\r\n{}", res);
+                            data.write(response.as_bytes()).unwrap();
+                        },
                         _ => {
                             let response = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
                             data.write(response.as_bytes()).unwrap();
