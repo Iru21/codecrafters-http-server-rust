@@ -43,19 +43,13 @@ impl HTTPRequest {
         let start_line = lines[0].split_whitespace().collect_vec();
         let method = start_line[0].to_string();
         let path = start_line[1].to_string();
+        let mut body = request.split("\r\n\r\n").collect_vec()[1].to_string();
         let mut headers = Vec::new();
-        let mut body = String::new();
-        let mut is_body = false;
-        for line in lines[1..].iter() {
-            if line == &"" {
-                is_body = true;
-                continue;
-            }
-            if is_body {
-                body.push_str(line);
-                continue;
-            }
-            headers.push(line.to_string());
+        if body.contains("\r\n") {
+            let body_cop = body.clone();
+            let mut split = body_cop.split("\r\n");
+            body = split.next().unwrap().to_string();
+            headers = split.map(|x| x.to_string()).collect_vec();
         }
         HTTPRequest {
             method,
